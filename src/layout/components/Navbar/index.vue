@@ -174,7 +174,7 @@ const toggleFullscreen = () => {
 };
 
 const goToHome = () => {
-  router.push('/layout');
+  router.push('/home');
 };
 
 // 前往消息页面

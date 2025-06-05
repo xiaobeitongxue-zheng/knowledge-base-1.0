@@ -10,6 +10,7 @@
           <el-menu-item index="dashboard">工作台</el-menu-item>
           <el-menu-item index="documents">知识管理</el-menu-item>
           <el-menu-item index="sharing">我的分享</el-menu-item>
+          <el-menu-item index="favorite">我的收藏</el-menu-item>
         </el-menu>
       </div>
     </div>
@@ -24,13 +25,11 @@
           <!-- 左侧快捷入口 -->
           <el-col :span="16">
             <el-card class="quick-access-panel">
-              
-              
               <!-- 最近编辑/访问的文档 -->
               <div class="section recent-docs">
                 <div class="section-header">
                   <h4>最近编辑/访问</h4>
-                  <el-button text>查看全部</el-button>
+                  <!-- <el-button text @click="goToAllKnowledge">查看全部</el-button> -->
                 </div>
                 <el-scrollbar height="150px">
                   <div class="doc-list">
@@ -49,7 +48,7 @@
               <div class="section pending-tasks">
                 <div class="section-header">
                   <h4>待办学习任务</h4>
-                  <el-button text>查看全部</el-button>
+                  <!-- <el-button text>查看全部</el-button> -->
                 </div>
                 <el-scrollbar height="150px">
                   <div class="task-list">
@@ -69,7 +68,7 @@
               <div class="section favorite-docs">
                 <div class="section-header">
                   <h4>收藏的常用知识</h4>
-                  <el-button text @click="showManageFavorites">管理收藏</el-button>
+                  <!-- <el-button text @click="showManageFavorites">管理收藏</el-button> -->
                 </div>
                 <el-scrollbar height="250px">
                   <div class="favorite-grid">
@@ -118,7 +117,7 @@
               
               <!-- 学习进度统计 -->
               <div class="stats-section">
-                <h4>学习进度统计</h4>
+                <h4>代办任务统计</h4>
                 <div class="learning-progress">
                   <el-progress 
                     type="dashboard" 
@@ -136,7 +135,7 @@
                     </div>
                     <el-button type="primary" size="small" class="create-plan-btn" @click="showCreateLearningPlan">
                       <el-icon><Plus /></el-icon>
-                      学习计划
+                      学习任务
                     </el-button>
                   </div>
                 </div>
@@ -146,7 +145,7 @@
         </el-row>
       </div>
   
-      <!-- 文档管理页面 -->
+      <!-- 知识管理页面 -->
       <div v-if="activeTab === 'documents'" class="documents-view">
         <!-- 文档筛选区域 -->
         <div class="filter-section">
@@ -234,32 +233,41 @@
           style="width: 100%"
           v-loading="loading"
           @row-click="handleRowClick"
+          header-align="center" 
+          :header-cell-style="{ backgroundColor: '#f5f7fa', color: '#606266', fontWeight: 'bold' }" 
+          :cell-style="{ textAlign: 'center' }" 
+          :fit="true"
+          :border="false"
         >
           <template #empty>
             <el-empty :description="currentPath.length === 0 ? '暂无文件夹' : '暂无文档'" />
           </template>
           
           <!-- 名称列 (始终显示) -->
-          <el-table-column label="名称" min-width="150">
+          <el-table-column label="名称" min-width="180" align="left" header-align="left">
+            <template #header>
+              <span style="text-align: left; display: block; padding-left: 10px;">名称</span>
+            </template>
             <template #default="scope">
-              <div class="file-name-cell">
-                <el-icon :size="18" class="file-icon">
+              <div class="file-name-cell" style="display: flex; align-items: center; justify-content: flex-start;">
+                <el-icon :size="18" class="file-icon" style="margin-right: 8px;">
                   <component :is="getFileTypeIcon(scope.row.type)"></component>
                 </el-icon>
                 <span 
                   :class="{ 'folder-name': scope.row.isFolder }"
                   @click.stop="scope.row.isFolder ? enterFolder(scope.row) : null"
                 >{{ scope.row.name }}</span>
-                <!-- 移除了"新"标签 -->
-                
               </div>
             </template>
           </el-table-column>
           
           <!-- 创建日期列 (非搜索模式显示) -->
-          <el-table-column v-if="!isSearchMode" label="创建日期" width="180">
+          <el-table-column v-if="!isSearchMode" label="创建日期" width="150" align="center" header-align="center">
+            <template #header>
+              <span style="text-align: center; display: block;">创建日期</span>
+            </template>
             <template #default="scope">
-              {{ scope.row.createTime ? formatDate(new Date(scope.row.createTime), 'short') : '-' }}
+              <div style="text-align: center;">{{ scope.row.createTime ? formatDate(new Date(scope.row.createTime), 'short') : '-' }}</div>
             </template>
           </el-table-column>
           
@@ -267,102 +275,113 @@
           <el-table-column 
             v-if="currentLocationDocuments.some(doc => !doc.isFolder)"
             label="知识摘要" 
-            :width="isSearchMode ? 200 : 100"
+            :width="isSearchMode ? 150 : 120"
+            align="center" 
+            header-align="center"
           >
+            <template #header>
+              <span style="text-align: center; display: block;">知识摘要</span>
+            </template>
             <template #default="scope">
-              <el-button 
-                v-if="!scope.row.isFolder && scope.row.summary" 
-                link 
-                type="primary" 
-                @click.stop="showKnowledgeSummary(scope.row)"
-              >
-                查看摘要
-              </el-button>
-              <span v-else>-</span>
+              <div style="text-align: center;">
+                <el-button 
+                  v-if="!scope.row.isFolder && scope.row.summary" 
+                  link 
+                  type="primary" 
+                  @click.stop="showKnowledgeSummary(scope.row)"
+                >
+                  查看摘要
+                </el-button>
+                <span v-else>-</span>
+              </div>
             </template>
           </el-table-column>
           
           <!-- 状态列 (非搜索模式显示) -->
-          <el-table-column v-if="!isSearchMode && currentLocationDocuments.some(doc => !doc.isFolder)" label="状态" width="120">
+          <el-table-column v-if="!isSearchMode && currentLocationDocuments.some(doc => !doc.isFolder)" label="状态" width="100" align="center" header-align="center">
+            <template #header>
+              <span style="text-align: center; display: block;">状态</span>
+            </template>
             <template #default="scope">
-              <template v-if="!scope.row.isFolder">
-                <el-tag 
-                  :type="scope.row.status === 0 ? 'success' : 'info'" 
-                  effect="plain"
-                >
-                  {{ scope.row.status === 0 ? '公开' : '私有' }}
-                </el-tag>
-              </template>
-              <span v-else>-</span>
+              <div style="text-align: center;">
+                <template v-if="!scope.row.isFolder">
+                  <el-tag 
+                    :type="scope.row.status === 0 ? 'success' : 'info'" 
+                    effect="plain"
+                    size="small"
+                  >
+                    {{ scope.row.status === 0 ? '公开' : '私有' }}
+                  </el-tag>
+                </template>
+                <span v-else>-</span>
+              </div>
             </template>
           </el-table-column>
           
           <!-- 标签列 (非搜索模式显示) -->
-          <el-table-column v-if="!isSearchMode && currentLocationDocuments.some(doc => !doc.isFolder)" label="标签" min-width="150">
+          <el-table-column v-if="!isSearchMode && currentLocationDocuments.some(doc => !doc.isFolder)" label="标签" min-width="130" align="center" header-align="center">
+            <template #header>
+              <span style="text-align: center; display: block;">标签</span>
+            </template>
             <template #default="scope">
-              <template v-if="!scope.row.isFolder && scope.row.tags && scope.row.tags.length > 0">
-                <el-tag 
-                  v-for="tagId in scope.row.tags" 
-                  :key="tagId"
-                  size="small"
-                  class="tag-in-table"
-                >
-                  {{ getTagName(tagId) }}
-                </el-tag>
-              </template>
-              <span v-else>-</span>
+              <div style="text-align: center;">
+                <template v-if="!scope.row.isFolder && scope.row.tags && scope.row.tags.length > 0">
+                  <el-tag 
+                    v-for="tagId in scope.row.tags" 
+                    :key="tagId"
+                    size="small"
+                    class="tag-in-table"
+                  >
+                    {{ getTagName(tagId) }}
+                  </el-tag>
+                </template>
+                <span v-else>-</span>
+              </div>
             </template>
           </el-table-column>
           
           <!-- 版本列 (非搜索模式显示) -->
-          <el-table-column v-if="!isSearchMode && currentLocationDocuments.some(doc => !doc.isFolder)" label="版本" width="100">
+          <el-table-column v-if="!isSearchMode && currentLocationDocuments.some(doc => !doc.isFolder)" label="版本" width="100" align="center" header-align="center">
+            <template #header>
+              <span style="text-align: center; display: block;">版本</span>
+            </template>
             <template #default="scope">
-              <template v-if="!scope.row.isFolder">
-                <el-button 
-                  v-if="scope.row.versions && scope.row.versions.length > 1" 
-                  link 
-                  type="primary" 
-                  @click.stop="showVersionHistory(scope.row)"
-                >
-                  {{ scope.row.versions.length }} 个版本
-                </el-button>
-                <span v-else-if="scope.row.currentVersion">v{{ scope.row.currentVersion }}</span>
-                <span v-else>-</span>
-              </template>
-              <span v-else>-</span>
+              <div style="text-align: center;">
+                <el-tooltip content="查看历史版本" placement="top">
+                  <span style="cursor:pointer;color:#409EFF" @click.stop="showHistoryVersions(scope.row)">
+                    <template v-if="scope.row.versions && scope.row.versions.length > 1">
+                      {{ scope.row.versions.length }} 个版本
+                    </template>
+                    <template v-else-if="scope.row.currentVersion">
+                      v{{ scope.row.currentVersion }}
+                    </template>
+                    <template v-else>-</template>
+                  </span>
+                </el-tooltip>
+              </div>
             </template>
           </el-table-column>
           
           <!-- 操作列 (非搜索模式显示) -->
-          <el-table-column v-if="!isSearchMode" label="操作" width="1000">
+          <el-table-column v-if="!isSearchMode" label="操作" width="150" align="center" header-align="center" fixed="right">
+            <template #header>
+              <span style="text-align: center; display: block;">操作</span>
+            </template>
             <template #default="scope">
-              <div class="table-actions">
-                <el-tooltip content="编辑" placement="top">
-                  <el-button type="primary" size="small" text @click="handleCommand('edit', scope.row)">
-                    <el-icon><Edit /></el-icon>
-                  </el-button>
-                </el-tooltip>
-                <el-tooltip content="下载" placement="top" v-if="!scope.row.isFolder">
-                  <el-button type="info" size="small" text @click="handleCommand('download', scope.row)">
-                    <el-icon><Download /></el-icon>
-                  </el-button>
-                </el-tooltip>
-                <el-tooltip :content="publishStateMap[scope.row.id] ? '取消发布' : '分享到社区'" placement="top" v-if="!scope.row.isFolder">
-                  <el-button 
-                    :type="publishStateMap[scope.row.id] ? 'warning' : 'success'" 
-                    size="small" 
-                    text 
-                    @click="handleCommand(publishStateMap[scope.row.id] ? 'unpublish' : 'publish', scope.row)"
-                  >
-                    <el-icon v-if="publishStateMap[scope.row.id]"><TurnOff /></el-icon>
-                    <el-icon v-else><Share /></el-icon>
-                  </el-button>
-                </el-tooltip>
-                <el-tooltip content="删除" placement="top">
-                  <el-button type="danger" size="small" text @click="handleCommand('delete', scope.row)">
-                    <el-icon><Delete /></el-icon>
-                  </el-button>
-                </el-tooltip>
+              <div class="table-actions" style="display: flex; justify-content: center; gap: 5px;">
+                <el-button type="primary" size="small" text @click="handleCommand('edit', scope.row)">
+                  <el-icon><Edit /></el-icon>
+                </el-button>
+                <el-button v-if="!scope.row.isFolder" type="info" size="small" text @click="handleCommand('download', scope.row)">
+                  <el-icon><Download /></el-icon>
+                </el-button>
+                <el-button v-if="!scope.row.isFolder" :type="publishStateMap[scope.row.id] ? 'warning' : 'success'" size="small" text @click="handleCommand(publishStateMap[scope.row.id] ? 'unpublish' : 'publish', scope.row)">
+                  <el-icon v-if="publishStateMap[scope.row.id]"><TurnOff /></el-icon>
+                  <el-icon v-else><Share /></el-icon>
+                </el-button>
+                <el-button type="danger" size="small" text @click="handleCommand('delete', scope.row)">
+                  <el-icon><Delete /></el-icon>
+                </el-button>
               </div>
             </template>
           </el-table-column>
@@ -529,62 +548,56 @@
         
         <!-- 分享列表 -->
         <div class="sharing-list-container" v-loading="sharingLoading">
-          <el-table :data="filteredShares" style="width: 100%">
-            <el-table-column label="内容名称" min-width="100" align="left">
+          <el-table :data="filteredShares" style="width: 100%" header-align="center" :header-cell-style="{ backgroundColor: '#f5f7fa', color: '#606266', fontWeight: 'bold' }" :cell-style="{ textAlign: 'center' }" :fit="true">
+            <el-table-column label="内容名称" width="100" align="left" header-align="left">
+              <template #header>
+                <span style="text-align: left; display: block; padding-left: 10px;">内容名称</span>
+              </template>
               <template #default="scope">
-                <div class="share-name">
-                  <el-icon :size="18" class="share-icon">
+                <div class="share-name" style="display: flex; align-items: center; justify-content: flex-start;">
+                  <el-icon :size="18" class="share-icon" style="margin-right: 8px;">
                     <component :is="getShareTypeIcon(scope.row.type)"></component>
                   </el-icon>
                   <span>{{ scope.row.title }}</span>
                 </div>
               </template>
             </el-table-column>
-            <el-table-column label="分享类型" width="250" align="left">
+            <el-table-column label="分享时间" width="50" align="center" header-align="center">
+              <template #header>
+                <span style="text-align: center; display: block;">分享时间</span>
+              </template>
               <template #default="scope">
-                <el-tag size="small" :type="getShareTypeTag(scope.row.type)">
-                  {{ getShareTypeName(scope.row.type) }}
-                </el-tag>
+                <div style="text-align: center;">{{ formatDate(scope.row.sharedAt) }}</div>
               </template>
             </el-table-column>
-            <el-table-column label="分享时间" width="100" align="left">
+            <el-table-column label="访问次数" width="100" align="center" header-align="center">
+              <template #header>
+                <span style="text-align: center; display: block;">访问次数</span>
+              </template>
               <template #default="scope">
-                {{ formatDate(scope.row.sharedAt) }}
+                <div style="text-align: center;">{{ scope.row.views }}</div>
               </template>
             </el-table-column>
-            <el-table-column label="有效期" width="120" align="left">
+            <el-table-column label="权限" width="50" align="center" header-align="center">
+              <template #header>
+                <span style="text-align: center; display: block;">权限</span>
+              </template>
               <template #default="scope">
-                <span :class="{ 'expired-text': isShareExpired(scope.row) }">
-                  {{ getShareExpiryText(scope.row) }}
-                </span>
+                <div style="text-align: center;">
+                  <el-tag type="info" size="small" effect="plain">
+                    {{ scope.row.isPublic ? '公开访问' : '私密链接' }}
+                  </el-tag>
+                </div>
               </template>
             </el-table-column>
-            <el-table-column label="访问次数" width="100" align="left">
-              <template #default="scope">
-                {{ scope.row.views }}
+            <el-table-column label="操作" width="80" align="center" header-align="center" fixed="right">
+              <template #header>
+                <span style="text-align: center; display: block;">操作</span>
               </template>
-            </el-table-column>
-            <el-table-column label="权限" width="130" align="left">
               <template #default="scope">
-                <el-tag type="info" size="small" effect="plain">
-                  {{ scope.row.isPublic ? '公开访问' : '私密链接' }}
-                </el-tag>
-              </template>
-            </el-table-column>
-            <el-table-column label="操作" width="90" align="left">
-              <template #default="scope">
-                <div class="share-actions">
+                <div class="share-actions" style="display: flex; justify-content: center; gap: 5px;">
                   <el-button size="small" type="primary" text @click="viewSharedContent(scope.row)">
                     <el-icon><View /></el-icon>
-                  </el-button>
-                  <el-button size="small" text @click="copyShareLink(scope.row)">
-                    <el-icon><CopyDocument /></el-icon>
-                  </el-button>
-                  <el-button size="small" text @click="editSharePermissions(scope.row)">
-                    <el-icon><Edit /></el-icon>
-                  </el-button>
-                  <el-button size="small" type="danger" text @click="unshareContent(scope.row)">
-                    <el-icon><Close /></el-icon>
                   </el-button>
                 </div>
               </template>
@@ -607,7 +620,7 @@
       </div>
       
       <!-- 分享内容对话框 -->
-      <el-dialog
+      <!-- <el-dialog
         v-model="shareDialogVisible"
         title="分享内容"
         width="600px"
@@ -756,7 +769,7 @@
             </el-button>
           </span>
         </template>
-      </el-dialog>
+      </el-dialog> -->
 
       <!-- 知识摘要对话框 -->
       <el-dialog
@@ -779,7 +792,7 @@
       <el-dialog
         v-model="documentContentVisible"
         :title="currentDocument?.name || '文档内容'"
-        width="700px"
+        width="600px"
       >
         <div class="document-content">
           <div v-html="currentDocumentContent"></div>
@@ -791,92 +804,6 @@
         </template>
       </el-dialog>
 
-      <!-- 编辑标签对话框 -->
-      <el-dialog
-        v-model="editTagsDialogVisible"
-        title="编辑标签"
-        width="500px"
-      >
-        <div class="edit-tags-content">
-          <p class="edit-tags-hint">为"{{ currentDocument?.name || '' }}"添加或移除标签：</p>
-          <el-select
-            v-model="selectedDocumentTags"
-            multiple
-            filterable
-            allow-create
-            default-first-option
-            placeholder="选择或创建标签"
-            class="tag-select"
-          >
-            <el-option
-              v-for="tag in allTags"
-              :key="tag.id"
-              :label="tag.name"
-              :value="tag.id"
-            />
-          </el-select>
-          
-          <div class="popular-tags-section">
-            <h4>常用标签</h4>
-            <div class="popular-tags-list">
-              <el-tag
-                v-for="tag in popularTags"
-                :key="tag.id"
-                :type="selectedDocumentTags.includes(tag.id) ? '' : 'info'"
-                effect="plain"
-                class="tag-item"
-                @click="toggleDocumentTag(tag.id)"
-              >
-                {{ tag.name }}
-              </el-tag>
-            </div>
-          </div>
-        </div>
-        <template #footer>
-          <span class="dialog-footer">
-            <el-button @click="editTagsDialogVisible = false">取消</el-button>
-            <el-button type="primary" @click="saveDocumentTags">保存</el-button>
-          </span>
-        </template>
-      </el-dialog>
-
-      <!-- 移动文件对话框 -->
-      <el-dialog
-        v-model="moveDialogVisible"
-        title="移动到文件夹"
-        width="500px"
-      >
-        <div class="move-dialog-content">
-          <p class="move-dialog-hint">选择要将"{{ currentDocument?.name || '' }}"移动到的目标文件夹：</p>
-          
-          <el-tree
-            ref="folderTreeRef"
-            :data="folderTreeData"
-            node-key="id"
-            :props="{ label: 'name', children: 'children' }"
-            :default-expanded-keys="[0]"
-            highlight-current
-            @node-click="handleFolderSelect"
-          >
-            <template #default="{ node, data }">
-              <span class="folder-tree-node">
-                <el-icon><FolderOpened /></el-icon>
-                <span>{{ node.label }}</span>
-              </span>
-            </template>
-          </el-tree>
-          
-          <div class="selected-path" v-if="selectedFolderId !== null">
-            <p>已选择：<strong>{{ getSelectedFolderPath }}</strong></p>
-          </div>
-        </div>
-        <template #footer>
-          <span class="dialog-footer">
-            <el-button @click="moveDialogVisible = false">取消</el-button>
-            <el-button type="primary" @click="moveDocument" :disabled="selectedFolderId === null">移动</el-button>
-          </span>
-        </template>
-      </el-dialog>
 
       <!-- 管理收藏对话框 -->
       <el-dialog
@@ -888,36 +815,97 @@
           <el-tabs v-model="favoritesTabActive">
             <!-- 当前收藏标签页 -->
             <el-tab-pane label="当前收藏" name="current">
+              <!-- 文件路径导航 -->
+              <div class="file-path-nav">
+                <div class="path-nav-container" style="justify-content: flex-start;">
+                  <el-button 
+                    v-if="currentFavoritePath.length > 0" 
+                    size="small" 
+                    icon="ArrowLeft" 
+                    @click="navigateBackFavorites" 
+                    class="back-button"
+                  >
+                    返回上一页
+                  </el-button>
+                  
+                  <el-breadcrumb separator="/" v-if="currentFavoritePath.length > 0" style="margin-left: 0;">
+                    <el-breadcrumb-item :to="{ path: '' }" @click="navigateToRootFavorites">全部收藏</el-breadcrumb-item>
+                    <el-breadcrumb-item 
+                      v-for="(folder, index) in currentFavoritePath" 
+                      :key="index"
+                      :to="{ path: '' }"
+                      @click="navigateToFavoritesPath(index)"
+                    >
+                      {{ folder.name }}
+                    </el-breadcrumb-item>
+                  </el-breadcrumb>
+                  <span v-else style="margin-left: 0;">全部收藏</span>
+                </div>
+              </div>
+              
+              <!-- 收藏内容表格 -->
               <el-table
-                :data="favoriteDocuments"
+                :data="currentLocationFavorites"
                 style="width: 100%"
                 v-loading="favoritesLoading"
+                @row-click="handleFavoriteRowClick"
+                :header-cell-style="{ backgroundColor: '#f5f7fa', color: '#606266', fontWeight: 'bold' }" 
+                :cell-style="{ textAlign: 'center' }" 
+                :fit="true"
+                :border="false"
               >
-                <el-table-column label="文档名称" min-width="200">
+                <template #empty>
+                  <el-empty :description="currentFavoritePath.length === 0 ? '暂无收藏内容' : '该文件夹下暂无内容'" />
+                </template>
+                
+                <el-table-column label="名称" min-width="130" align="left" header-align="left">
+                  <template #header>
+                    <span style="text-align: left; display: block; padding-left: 10px;">名称</span>
+                  </template>
                   <template #default="scope">
-                    <div class="favorite-name-cell">
-                      <el-icon :size="18" class="file-icon">
-                        <component :is="getFileIcon(scope.row.type)"></component>
+                    <div class="file-name-cell" style="display: flex; align-items: center; justify-content: flex-start;">
+                      <el-icon :size="18" class="file-icon" style="margin-right: 8px;">
+                        <component :is="scope.row.isFolder ? FolderOpened : getFileIcon(scope.row.type)"></component>
                       </el-icon>
-                      <span>{{ scope.row.title }}</span>
+                      <span 
+                        :class="{ 'folder-name': scope.row.isFolder }"
+                        @click.stop="scope.row.isFolder ? enterFavoriteFolder(scope.row) : null"
+                      >{{ scope.row.isFolder ? scope.row.name || scope.row.title : scope.row.title }}</span>
                     </div>
                   </template>
                 </el-table-column>
-                <el-table-column label="类型" width="100">
+                
+                <el-table-column label="类型" width="100" align="center" header-align="center">
+                  <template #header>
+                    <span style="text-align: center; display: block;">类型</span>
+                  </template>
                   <template #default="scope">
-                    <el-tag size="small">{{ getDocumentTypeName(scope.row.type) }}</el-tag>
+                    <el-tag size="small">{{ scope.row.isFolder ? '文件夹' : getDocumentTypeName(scope.row.type) }}</el-tag>
                   </template>
                 </el-table-column>
-                <el-table-column label="收藏时间" width="150">
+                
+                <el-table-column label="收藏时间" width="120" align="center" header-align="center">
+                  <template #header>
+                    <span style="text-align: center; display: block;">收藏时间</span>
+                  </template>
                   <template #default="scope">
-                    {{ formatDate(scope.row.favoriteTime || scope.row.lastModified) }}
+                    {{ formatDate(scope.row.favoriteTime || new Date()) }}
                   </template>
                 </el-table-column>
-                <el-table-column label="操作" width="130">
+                
+                <el-table-column label="操作" width="100" align="center" header-align="center" fixed="right">
+                  <template #header>
+                    <span style="text-align: center; display: block;">操作</span>
+                  </template>
                   <template #default="scope">
-                    <div class="favorites-actions">
-                      <el-button size="small" type="primary" text @click.stop="openDocument(scope.row)">
-                        <el-icon><View /></el-icon>
+                    <div class="favorites-actions" style="display: flex; justify-content: center; gap: 5px;">
+                      <template v-if="!scope.row.isFolder">
+                        <el-button size="small" type="primary" text @click.stop="openDocument(scope.row)">
+                          <el-icon><View /></el-icon>
+                        </el-button>
+                      </template>
+                      <el-button size="small" type="primary" text @click.stop="scope.row.isFolder ? createFavoriteSubFolder(scope.row) : null">
+                        <el-icon><FolderAdd /></el-icon>
                       </el-button>
                       <el-button size="small" type="danger" text @click.stop="removeFavorite(scope.row)">
                         <el-icon><Delete /></el-icon>
@@ -926,21 +914,23 @@
                   </template>
                 </el-table-column>
               </el-table>
-              <div class="empty-favorites" v-if="favoriteDocuments.length === 0">
-                <el-empty description="暂无收藏文档" />
-              </div>
             </el-tab-pane>
             
             <!-- 添加收藏标签页 -->
             <el-tab-pane label="添加收藏" name="add">
-              <el-input
-                v-model="favoriteSearchKeyword"
-                placeholder="搜索文档..."
-                prefix-icon="Search"
-                clearable
-                @input="searchForFavorites"
-                style="margin-bottom: 15px"
-              />
+              <div class="add-favorites-header">
+                <el-input
+                  v-model="favoriteSearchKeyword"
+                  placeholder="搜索文档..."
+                  prefix-icon="Search"
+                  clearable
+                  @input="searchForFavorites"
+                  style="width: 250px; margin-right: 10px;"
+                />
+                <el-button type="primary" size="small" @click="createRootFavoriteFolder">
+                  <el-icon><FolderAdd /></el-icon> 新建文件夹
+                </el-button>
+              </div>
               
               <el-table
                 :data="filteredNonFavoriteDocuments"
@@ -967,9 +957,26 @@
                     {{ formatDate(scope.row.lastModified) }}
                   </template>
                 </el-table-column>
-                <el-table-column label="操作" width="80">
+                <el-table-column label="操作" width="180">
                   <template #default="scope">
-                    <el-button size="small" type="primary" @click="addToFavorites(scope.row)">收藏</el-button>
+                    <div style="display: flex; gap: 5px;">
+                      <el-button size="small" type="primary" @click="addToFavorites(scope.row)">收藏</el-button>
+                      <el-select 
+                        v-model="scope.row.favoriteFolder" 
+                        placeholder="选择文件夹" 
+                        size="small" 
+                        style="width: 100px;"
+                        @change="(val) => addToSpecificFolder(scope.row, val)"
+                      >
+                        <el-option label="根目录" :value="null" />
+                        <el-option 
+                          v-for="folder in allFavoriteFolders" 
+                          :key="folder.id" 
+                          :label="folder.title || folder.name" 
+                          :value="folder.id" 
+                        />
+                      </el-select>
+                    </div>
                   </template>
                 </el-table-column>
               </el-table>
@@ -986,203 +993,6 @@
         </template>
       </el-dialog>
 
-      <!-- 创建学习计划对话框 -->
-      <el-dialog
-        v-model="createLearningPlanVisible"
-        title="创建学习计划"
-        width="700px"
-      >
-        <el-form :model="newLearningPlan" label-width="100px">
-          <el-form-item label="计划名称" required>
-            <el-input v-model="newLearningPlan.title" placeholder="请输入学习计划名称" />
-          </el-form-item>
-          
-          <el-form-item label="计划描述">
-            <el-input 
-              v-model="newLearningPlan.description" 
-              type="textarea" 
-              :rows="3" 
-              placeholder="请输入计划描述..." 
-            />
-          </el-form-item>
-          
-          <el-form-item label="计划周期" required>
-            <el-date-picker
-              v-model="newLearningPlan.startDate"
-              type="date"
-              placeholder="开始日期"
-              style="width: 220px; margin-right: 10px;"
-            />
-            <span class="date-separator">至</span>
-            <el-date-picker
-              v-model="newLearningPlan.endDate"
-              type="date"
-              placeholder="结束日期"
-              style="width: 220px; margin-left: 10px;"
-            />
-          </el-form-item>
-          
-          <el-form-item label="标签">
-            <el-select
-              v-model="newLearningPlan.tags"
-              multiple
-              filterable
-              allow-create
-              default-first-option
-              placeholder="选择或创建标签"
-              style="width: 100%;"
-            >
-              <el-option label="前端" value="frontend" />
-              <el-option label="后端" value="backend" />
-              <el-option label="数据库" value="database" />
-              <el-option label="算法" value="algorithm" />
-              <el-option label="架构" value="architecture" />
-              <el-option label="工具" value="tools" />
-            </el-select>
-          </el-form-item>
-          
-          <div class="learning-items-section">
-            <div class="learning-items-header">
-              <h4>学习项目</h4>
-              <el-button type="primary" size="small" @click="addLearningItem">
-                <el-icon><Plus /></el-icon> 添加学习项目
-              </el-button>
-            </div>
-            
-            <el-empty v-if="newLearningPlan.items.length === 0" description="暂无学习项目" />
-            
-            <div v-else class="learning-items-list">
-              <el-card v-for="(item, index) in newLearningPlan.items" :key="index" class="learning-item">
-                <div class="item-header">
-                  <h4>{{ item.title }}</h4>
-                  <el-button type="danger" size="small" circle @click="removeLearningItem(index)">
-                    <el-icon><Delete /></el-icon>
-                  </el-button>
-                </div>
-                <div class="item-desc">{{ item.description }}</div>
-                <div class="item-meta">
-                  <el-tag size="small" :type="getPriorityType(item.priority)">{{ getPriorityText(item.priority) }}</el-tag>
-                  <span class="time-estimate">估计学习时间: {{ item.estimatedTime }} 小时</span>
-                </div>
-                <div class="item-resources" v-if="item.resources && item.resources.length > 0">
-                  <div class="resources-title">学习资源:</div>
-                  <ul class="resource-list">
-                    <li v-for="(resource, rIndex) in item.resources" :key="rIndex">
-                      {{ resource.title }} ({{ getResourceTypeText(resource.type) }})
-                    </li>
-                  </ul>
-                </div>
-              </el-card>
-            </div>
-          </div>
-          
-          <!-- 添加学习项目表单 -->
-          <el-collapse-transition>
-            <div v-if="showLearningItemForm" class="learning-item-form">
-              <h4>添加学习项目</h4>
-              <el-form :model="newLearningItem" label-width="100px">
-                <el-form-item label="项目名称" required>
-                  <el-input v-model="newLearningItem.title" placeholder="请输入学习项目名称" />
-                </el-form-item>
-                <el-form-item label="项目描述">
-                  <el-input 
-                    v-model="newLearningItem.description" 
-                    type="textarea" 
-                    :rows="2" 
-                    placeholder="请输入项目描述..." 
-                  />
-                </el-form-item>
-                <el-form-item label="优先级">
-                  <el-select v-model="newLearningItem.priority" placeholder="选择优先级" style="width: 100%;">
-                    <el-option label="高" value="high" />
-                    <el-option label="中" value="medium" />
-                    <el-option label="低" value="low" />
-                  </el-select>
-                </el-form-item>
-                <el-form-item label="估计时间">
-                  <el-input-number v-model="newLearningItem.estimatedTime" :min="0.5" :step="0.5" style="width: 100%;" />
-                  <span class="time-unit">小时</span>
-                </el-form-item>
-                
-                <div class="resources-section">
-                  <div class="resources-header">
-                    <h4>学习资源</h4>
-                    <el-button type="primary" size="small" @click="showAddResource = true">
-                      <el-icon><Plus /></el-icon> 添加资源
-                    </el-button>
-                  </div>
-                  
-                  <el-table v-if="newLearningItem.resources.length > 0" :data="newLearningItem.resources" style="width: 100%">
-                    <el-table-column label="资源名称" prop="title" />
-                    <el-table-column label="类型" width="100">
-                      <template #default="scope">
-                        {{ getResourceTypeText(scope.row.type) }}
-                      </template>
-                    </el-table-column>
-                    <el-table-column label="操作" width="80">
-                      <template #default="scope">
-                        <el-button type="danger" size="small" @click="removeResource(scope.$index)">
-                          删除
-                        </el-button>
-                      </template>
-                    </el-table-column>
-                  </el-table>
-                  
-                  <el-empty v-else description="暂无学习资源" />
-                  
-                  <!-- 添加资源表单 -->
-                  <el-collapse-transition>
-                    <div v-if="showAddResource" class="add-resource-form">
-                      <h4>添加学习资源</h4>
-                      <el-form :model="newResource" label-width="100px">
-                        <el-form-item label="资源名称" required>
-                          <el-input v-model="newResource.title" placeholder="请输入资源名称" />
-                        </el-form-item>
-                        <el-form-item label="资源类型">
-                          <el-select v-model="newResource.type" placeholder="选择资源类型" style="width: 100%;">
-                            <el-option label="网页链接" value="link" />
-                            <el-option label="视频教程" value="video" />
-                            <el-option label="电子书" value="ebook" />
-                            <el-option label="文档" value="document" />
-                            <el-option label="其他" value="other" />
-                          </el-select>
-                        </el-form-item>
-                        <el-form-item label="资源链接">
-                          <el-input v-model="newResource.url" placeholder="请输入资源链接" />
-                        </el-form-item>
-                        <el-form-item label="资源描述">
-                          <el-input 
-                            v-model="newResource.description" 
-                            type="textarea" 
-                            :rows="2" 
-                            placeholder="请输入资源描述..." 
-                          />
-                        </el-form-item>
-                        <el-form-item>
-                          <el-button type="primary" @click="addResource">添加</el-button>
-                          <el-button @click="showAddResource = false">取消</el-button>
-                        </el-form-item>
-                      </el-form>
-                    </div>
-                  </el-collapse-transition>
-                </div>
-                
-                <el-form-item>
-                  <el-button type="primary" @click="confirmAddLearningItem">添加</el-button>
-                  <el-button @click="cancelAddLearningItem">取消</el-button>
-                </el-form-item>
-              </el-form>
-            </div>
-          </el-collapse-transition>
-        </el-form>
-        
-        <template #footer>
-          <span class="dialog-footer">
-            <el-button @click="createLearningPlanVisible = false">取消</el-button>
-            <el-button type="primary" @click="createLearningPlan">创建学习计划</el-button>
-          </span>
-        </template>
-      </el-dialog>
 
       <!-- 编辑知识对话框 -->
       <el-dialog
@@ -1282,7 +1092,89 @@
           </span>
         </template>
       </el-dialog>
+     
+      <!-- 历史版本对话框 -->
+     <el-dialog 
+  v-model="historyVersionDialogVisible" 
+  title="历史版本" 
+  width="650px" 
+  :close-on-click-modal="false"
+  destroy-on-close
+>
+  <div class="history-version-container">
+    <el-table 
+      :data="historyVersions" 
+      v-loading="historyLoading" 
+      style="width:100%"
+      border
+      stripe
+      :header-cell-style="{
+        backgroundColor: '#f5f7fa', 
+        color: '#606266', 
+        fontWeight: 'bold', 
+        textAlign: 'center',
+        padding: '12px 0'
+      }"
+      :cell-style="{
+        textAlign: 'center',
+        padding: '12px 0'
+      }"
+    >
+      <el-table-column label="版本号" prop="fileVersion" width="90" align="center">
+        <template #default="scope">
+          <el-tag size="small" effect="plain" type="info">{{ scope.row.fileVersion }}</el-tag>
+        </template>
+      </el-table-column>
+      
+      <el-table-column label="创建时间" prop="createTime" width="180" align="center">
+        <template #default="scope">{{ formatDate(new Date(scope.row.createTime), 'short') }}</template>
+      </el-table-column>
+      
+      <el-table-column v-if="historyVersions.length > 1" label="修改人" width="120" align="center">
+        <template #default="scope">{{ scope.row.updatePerson || '-' }}</template>
+      </el-table-column>
+      
+      <el-table-column v-if="historyVersions.length > 1" label="操作" min-width="160" align="center">
+        <template #default="scope">
+          <el-button type="primary" size="small" @click="handleRollbackVersion(scope.row)">回滚到该版本</el-button>
+        </template>
+      </el-table-column>
+    </el-table>
+  </div>
+  
+  <template #footer>
+    <div class="dialog-footer">
+      <el-button @click="historyVersionDialogVisible = false">关闭</el-button>
+    </div>
+  </template>
+     </el-dialog>
 
+      <!-- 创建学习任务对话框 -->
+      <el-dialog
+        v-model="createTaskDialogVisible"
+        title="创建学习任务"
+        width="500px"
+      >
+        <el-form :model="createTaskForm" :rules="createTaskRules" ref="createTaskFormRef" label-width="80px">
+          <el-form-item label="任务名称" prop="agencyName">
+            <el-input v-model="createTaskForm.agencyName" placeholder="请输入任务名称" />
+          </el-form-item>
+          <el-form-item label="截止时间" prop="deadline">
+            <el-date-picker
+              v-model="createTaskForm.deadline"
+              type="datetime"
+              placeholder="选择截止时间"
+              style="width: 100%;"
+            />
+          </el-form-item>
+        </el-form>
+        <template #footer>
+          <span class="dialog-footer">
+            <el-button @click="createTaskDialogVisible = false">取消</el-button>
+            <el-button type="primary" @click="submitCreateTask">确定</el-button>
+          </span>
+        </template>
+      </el-dialog>
     </div>
   </div>
 </template>
@@ -1301,8 +1193,8 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import * as echarts from 'echarts'
 import { formatDistanceToNow, format, isAfter } from 'date-fns'
 import { zhCN } from 'date-fns/locale'
-import { createKnowledgeSet, getKnowledgeSets, deleteKnowledgeSet, getAllKnowledge, updateKnowledgeSet, deleteKnowledge, getKnowledge, searchKnowledge, updateKnowledgePreview, createKnowledge, publishKnowledge, cancelPublishKnowledge } from '@/api/knowledge'
-import { fileDownload } from '@/api/file'
+import { createKnowledgeSet, getKnowledgeSets, deleteKnowledgeSet, getAllKnowledge, updateKnowledgeSet, deleteKnowledge, getKnowledge, searchKnowledge, updateKnowledgePreview, createKnowledge, publishKnowledge, cancelPublishKnowledge, getKnowledgeVersions, rollbackKnowledgeVersion, getKnowledgeCreateCount, getUserFavoriteFolders, getFavoriteFolderItems, createUserAgency } from '@/api/knowledge'
+import { fileDownload, fileUpload } from '@/api/file'
 
 // 活动标签
 const activeTab = ref('dashboard')
@@ -1378,12 +1270,13 @@ const pendingTasks = ref([
 ])
 
 const favoriteDocuments = ref([
-  { id: 1, title: 'JavaScript高级编程指南', type: 'pdf', favoriteTime: new Date(2023, 7, 15) },
-  { id: 2, title: '前端开发规范', type: 'md', favoriteTime: new Date(2023, 7, 20) },
-  { id: 3, title: '项目周报模板', type: 'xlsx', favoriteTime: new Date(2023, 8, 1) },
-  { id: 4, title: 'API接口文档', type: 'md', favoriteTime: new Date(2023, 8, 5) },
-  { id: 5, title: '产品原型设计', type: 'pptx', favoriteTime: new Date(2023, 8, 10) },
-  { id: 6, title: '前端架构图', type: 'png', favoriteTime: new Date(2023, 8, 15) }
+  { id: 1, title: 'JavaScript高级编程指南', type: 'pdf', favoriteTime: new Date(2023, 7, 15), isFolder: false, parentId: null },
+  { id: 2, title: '前端开发规范', type: 'md', favoriteTime: new Date(2023, 7, 20), isFolder: false, parentId: null },
+  { id: 3, title: '项目周报模板', type: 'xlsx', favoriteTime: new Date(2023, 8, 1), isFolder: false, parentId: 5 },
+  { id: 4, title: 'API接口文档', type: 'md', favoriteTime: new Date(2023, 8, 5), isFolder: false, parentId: 5 },
+  { id: 5, title: '工作文档', type: 'folder', favoriteTime: new Date(2023, 8, 10), isFolder: true, parentId: null },
+  { id: 6, title: '前端架构图', type: 'png', favoriteTime: new Date(2023, 8, 15), isFolder: false, parentId: 7 },
+  { id: 7, title: '设计资源', type: 'folder', favoriteTime: new Date(2023, 8, 12), isFolder: true, parentId: null }
 ])
 
 // 数据看板
@@ -1518,6 +1411,9 @@ const goToUpload = () => {
   ElMessage.info('前往上传文档')
 }
 
+
+
+
 // 监听统计时间范围变化
 watch(statsTimeRange, (newValue) => {
   console.log('统计时间范围变更为:', newValue)
@@ -1529,7 +1425,7 @@ watch(statsTimeRange, (newValue) => {
     contributionStats.shared = 15
     learningStats.completed = 35
     learningStats.pending = 15
-    learningStats.completionRate = 70
+    learningStats.completionRate = 80
   } else {
     contributionStats.uploaded = 8
     contributionStats.edited = 15
@@ -2995,13 +2891,12 @@ const searchShares = () => {
 
 // 显示分享内容对话框
 const showShareContentDialog = () => {
-    shareDialogVisible.value = true
+  shareDialogVisible.value = true
   shareForm.contentType = 'document'
   shareForm.contentId = ''
   shareForm.shareTargets = ['private'] // 默认选择个人链接
   shareForm.teamId = ''
   shareForm.communityCategory = ''
-  shareForm.communityTags = []
   shareForm.isPublic = true
   shareForm.expiryOption = '7days'
   shareForm.expiryDate = new Date()
@@ -3054,9 +2949,9 @@ const submitShareContent = () => {
   ElMessage.success(`内容已成功分享到: ${targetMessages.join(', ')}`)
   
   // 实际应用中应调用API保存分享内容
-    shareDialogVisible.value = false
-  }
-  
+  shareDialogVisible.value = false
+}
+
 // 获取分享类型图标
 const getShareTypeIcon = (type: string): any => {
   const iconMap: Record<string, any> = {
@@ -3399,10 +3294,66 @@ const showManageFavorites = () => {
   manageFavoritesVisible.value = true
   favoritesLoading.value = true
   
-  // 模拟加载数据
-  setTimeout(() => {
-    favoritesLoading.value = false
-  }, 500)
+  // 调用收藏夹API获取数据
+  getUserFavoriteFolders()
+    .then((response: any) => {
+      if (response.data && response.data.code === 200) {
+        // 处理返回的收藏夹数据
+        const data = response.data.data;
+        if (data && data.length > 0) {
+          // 格式化API返回的数据
+          const formattedFolders = data.map((item: any) => {
+            // 只保留有数据的字段
+            const folder: any = {
+              id: item.id || 0,
+              title: item.name || '',
+              type: 'folder',
+              favoriteTime: new Date(),
+              isFolder: true,
+              parentId: null
+            };
+            
+            // 有名称时添加
+            if (item.name) {
+              folder.name = item.name;
+            }
+            
+            // 有收藏数量时添加
+            if (typeof item.favouriteCount === 'number') {
+              folder.favouriteCount = item.favouriteCount;
+            }
+            
+            // 有摘要时添加
+            if (item.summary) {
+              folder.summary = item.summary;
+            }
+            
+            return folder;
+          });
+          
+          // 更新收藏文档列表，替换现有的文件夹
+          // 先过滤掉所有文件夹，保留非文件夹项目
+          const nonFolderItems = favoriteDocuments.value.filter(item => !item.isFolder);
+          // 然后添加API返回的文件夹
+          favoriteDocuments.value = [...formattedFolders, ...nonFolderItems];
+          
+          ElMessage.success('收藏夹数据加载成功');
+        } else {
+          // 如果API返回数据为空，保持使用静态数据
+          ElMessage.info('没有找到收藏夹数据，使用默认数据');
+        }
+      } else {
+        // 接口调用失败时使用静态数据
+        ElMessage.warning('获取收藏夹数据失败，使用默认数据');
+      }
+    })
+    .catch((error: any) => {
+      console.error('获取收藏夹失败:', error);
+      ElMessage.error('获取收藏夹数据出错，使用默认数据');
+    })
+    .finally(() => {
+      favoritesLoading.value = false;
+    });
 }
 
 // 获取文档类型名称
@@ -3483,7 +3434,9 @@ const addToFavorites = (doc: any) => {
     id: doc.id,
     title: doc.name,
     type: doc.type,
-    favoriteTime: new Date()
+    favoriteTime: new Date(),
+    isFolder: doc.isFolder || false,
+    parentId: null // 默认添加到根目录
   })
   
   ElMessage.success('已添加到收藏')
@@ -3669,9 +3622,9 @@ const handleShareCurrentChange1 = (page: number) => {
 
 // 刷新分享数据
 const refreshSharingData1 = () => {
-  sharingLoading1.value = true
-    setTimeout(() => {
-    sharingLoading1.value = false
+  sharingLoading.value = true
+  setTimeout(() => {
+    sharingLoading.value = false
     ElMessage.success('分享数据已刷新')
   }, 1000)
   // 实际应用中应调用API刷新数据
@@ -3691,12 +3644,12 @@ const searchShares1 = () => {
 
 // 显示分享内容对话框
 const showShareContentDialog1 = () => {
-  shareDialogVisible1.value = true
-  shareForm1.contentType = 'document'
-  shareForm1.contentId = ''
-  shareForm1.shareTargets = ['private'] // 默认选择个人链接
-  shareForm1.teamId = ''
-  shareForm1.communityCategory = ''
+  shareDialogVisible.value = true
+  shareForm.contentType = 'document'
+  shareForm.contentId = ''
+  shareForm.shareTargets = ['private'] // 默认选择个人链接
+  shareForm.teamId = ''
+  shareForm.communityCategory = ''
   shareForm.isPublic = true
   shareForm.expiryOption = '7days'
   shareForm.expiryDate = new Date()
@@ -3906,7 +3859,6 @@ const saveDocumentTags1 = () => {
     // 在实际应用中这里应该调用API保存标签更改
   }
 }
-
 // 构建文件夹树数据
 const folderTreeData1 = computed(() => {
   // 根目录
@@ -4196,14 +4148,74 @@ const learningPlans = ref([
 
 // 显示创建学习计划对话框
 const showCreateLearningPlan = () => {
-  createLearningPlanVisible.value = true
-  // 重置表单
-  newLearningPlan.title = ""
-  newLearningPlan.description = ""
-  newLearningPlan.startDate = new Date()
-  newLearningPlan.endDate = new Date(new Date().setMonth(new Date().getMonth() + 1))
-  newLearningPlan.items = []
-  newLearningPlan.tags = []
+  // 清空表单
+  createTaskForm.agencyName = '';
+  createTaskForm.deadline = '';
+  createTaskDialogVisible.value = true;
+}
+
+// 创建学习任务相关变量和对话框
+const createTaskDialogVisible = ref(false);
+const createTaskFormRef = ref<FormInstance>();
+const createTaskForm = reactive({
+  agencyName: '',
+  deadline: ''
+});
+const createTaskRules = {
+  agencyName: [
+    { required: true, message: '请输入任务名称', trigger: 'blur' },
+    { max: 100, message: '任务名称不能超过100个字符', trigger: 'blur' }
+  ],
+  deadline: [
+    { required: true, message: '请选择截止时间', trigger: 'change' }
+  ]
+};
+
+// 提交创建学习任务
+const submitCreateTask = () => {
+  if (!createTaskFormRef.value) return;
+  
+  createTaskFormRef.value.validate((valid) => {
+    if (valid) {
+      // 显示加载状态
+      loading.value = true;
+      
+      // 格式化日期
+      const deadlineStr = createTaskForm.deadline 
+        ? new Date(createTaskForm.deadline).toISOString() 
+        : '';
+      
+      // 调用创建学习任务的API
+      createUserAgency({
+        agencyName: createTaskForm.agencyName,
+        deadline: deadlineStr
+      })
+        .then(response => {
+          if (response.data && response.data.code === 200) {
+            ElMessage.success(`学习任务"${createTaskForm.agencyName}"创建成功`);
+            createTaskDialogVisible.value = false;
+            
+            // 刷新待办任务列表
+            fetchPendingTasks();
+          } else {
+            ElMessage.error(response.data?.msg || '创建学习任务失败，请稍后重试');
+          }
+        })
+        .catch(error => {
+          console.error('创建学习任务失败:', error);
+          ElMessage.error('创建学习任务失败，请稍后重试');
+        })
+        .finally(() => {
+          loading.value = false;
+        });
+    }
+  });
+}
+
+// 获取待办任务列表
+const fetchPendingTasks = () => {
+  // 此处添加获取待办任务的API调用
+  // 实际项目中应根据具体情况调整
 }
 
 // 创建学习计划
@@ -4624,6 +4636,234 @@ const createNewKnowledge = () => {
       createKnowledgeLoading.value = false
     })
 }
+
+  // 历史版本弹窗相关
+  const historyVersionDialogVisible = ref(false)
+  const historyVersions = ref<any[]>([])
+  const historyLoading = ref(false)
+  const currentHistoryDoc = ref<any>(null)
+
+  // 查看历史版本
+  const showHistoryVersions = async (doc: any) => {
+    historyLoading.value = true
+    currentHistoryDoc.value = doc
+    try {
+      const res = await getKnowledgeVersions(doc.id)
+      if (res.data && res.data.code === 200 && Array.isArray(res.data.data)) {
+        historyVersions.value = res.data.data
+      } else {
+        historyVersions.value = []
+      }
+      historyVersionDialogVisible.value = true
+    } catch (e) {
+      historyVersions.value = []
+      historyVersionDialogVisible.value = true
+    } finally {
+      historyLoading.value = false
+    }
+  }
+
+  // 在<script setup>中添加方法：
+  const goToAllKnowledge = () => {
+    activeTab.value = 'documents';
+    currentPath.value = [];
+    isSearchMode.value = false;
+    searchKeyword.value = '';
+    // 可选：滚动到顶部
+    nextTick(() => {
+      window.scrollTo(0, 0);
+    });
+  };
+
+  const handleRollbackVersion = async (version: any) => {
+    if (!currentHistoryDoc.value) return
+    historyLoading.value = true
+    try {
+      // 取 fileVersion 字段，去掉 'v' 并转为数字
+      let versionId = version.fileVersion;
+      if (typeof versionId === 'string' && versionId.startsWith('v')) {
+        versionId = parseInt(versionId.replace('v', '').split('.')[0], 10);
+      }
+      // 兼容原有 id 字段
+      if (!versionId && version.id) {
+        versionId = version.id;
+      }
+      console.log('回滚参数', currentHistoryDoc.value.id, versionId, version);
+      const res = await rollbackKnowledgeVersion(currentHistoryDoc.value.id, versionId)
+      if (res.data && res.data.code === 200) {
+        ElMessage.success('回滚成功')
+        // 回滚后重新获取历史版本列表
+        const versionRes = await getKnowledgeVersions(currentHistoryDoc.value.id)
+        if (versionRes.data && versionRes.data.code === 200 && Array.isArray(versionRes.data.data)) {
+          historyVersions.value = versionRes.data.data
+        }
+        // 刷新文档内容
+        loadKnowledgeDetails(currentHistoryDoc.value)
+        // 可选：关闭弹窗
+        // historyVersionDialogVisible.value = false
+      } else {
+        ElMessage.error('回滚失败: ' + (res.data?.msg || '未知错误'))
+      }
+    } catch (e) {
+      ElMessage.error('回滚失败')
+    } finally {
+      historyLoading.value = false
+    }
+  }
+
+  // 收藏夹路径
+  const currentFavoritePath = ref<{id: number, name: string}[]>([])
+
+  // 获取当前收藏位置的内容
+  const currentLocationFavorites = computed(() => {
+    // 处理文件夹结构
+    let result = favoriteDocuments.value.filter(item => {
+      // 如果在根目录，只显示文件夹
+      if (currentFavoritePath.value.length === 0) {
+        return !item.parentId && item.isFolder;
+      }
+      // 如果在某个文件夹内，显示该文件夹下的内容
+      return item.parentId === currentFavoritePath.value[currentFavoritePath.value.length - 1].id;
+    });
+    
+    // 文件夹排在前面
+    return [...result].sort((a, b) => {
+      // 先按文件夹/文件排序
+      if (a.isFolder && !b.isFolder) return -1;
+      if (!a.isFolder && b.isFolder) return 1;
+      
+      // 再按收藏时间排序
+      const timeA = a.favoriteTime || new Date();
+      const timeB = b.favoriteTime || new Date();
+      return timeB.getTime() - timeA.getTime();
+    });
+  })
+
+  // 处理收藏表格行点击
+  const handleFavoriteRowClick = (row: any) => {
+    if (row.isFolder) {
+      enterFavoriteFolder(row);
+    } else {
+      openDocument(row);
+    }
+  }
+
+  // 进入收藏文件夹
+  const enterFavoriteFolder = (folder: any) => {
+    if (!folder.isFolder) return;
+    
+    // 更新路径
+    currentFavoritePath.value = [...currentFavoritePath.value, { id: folder.id, name: folder.name }];
+  }
+
+  // 返回上级收藏夹
+  const navigateBackFavorites = () => {
+    currentFavoritePath.value = currentFavoritePath.value.slice(0, -1);
+  }
+
+  // 返回收藏根目录
+  const navigateToRootFavorites = () => {
+    currentFavoritePath.value = [];
+  }
+
+  // 导航到指定的收藏路径
+  const navigateToFavoritesPath = (index: number) => {
+    currentFavoritePath.value = currentFavoritePath.value.slice(0, index + 1);
+  }
+
+  // 创建收藏子文件夹
+  const createFavoriteSubFolder = (parentFolder: any) => {
+    ElMessageBox.prompt('请输入文件夹名称', '新建收藏文件夹', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      inputValue: ''
+    }).then(({ value }) => {
+      if (value.trim()) {
+        // 创建新文件夹
+        const newFolder = {
+          id: Date.now(), // 使用时间戳作为临时ID
+          title: value,   // 使用title字段保持一致性
+          name: value,    // 同时保留name字段用于显示
+          type: 'folder', // 添加type字段
+          isFolder: true,
+          favoriteTime: new Date(),
+          parentId: parentFolder.id
+        };
+        
+        // 添加到收藏列表
+        favoriteDocuments.value.push(newFolder);
+        
+        ElMessage.success(`已创建收藏文件夹: ${value}`);
+      }
+    }).catch(() => {
+      // 用户取消操作
+    });
+  }
+
+  // 获取所有收藏文件夹
+  const allFavoriteFolders = computed(() => {
+    return favoriteDocuments.value.filter(item => item.isFolder);
+  });
+
+  // 创建根收藏文件夹
+  const createRootFavoriteFolder = () => {
+    ElMessageBox.prompt('请输入文件夹名称', '新建收藏文件夹', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      inputValue: ''
+    }).then(({ value }) => {
+      if (value.trim()) {
+        // 创建新文件夹
+        const newFolder = {
+          id: Date.now(), // 使用时间戳作为临时ID
+          title: value,   // 使用title字段保持一致性
+          name: value,    // 同时保留name字段用于显示
+          type: 'folder', // 添加type字段
+          isFolder: true,
+          favoriteTime: new Date(),
+          parentId: null  // 根目录
+        };
+        
+        // 添加到收藏列表
+        favoriteDocuments.value.push(newFolder);
+        
+        ElMessage.success(`已创建收藏文件夹: ${value}`);
+      }
+    }).catch(() => {
+      // 用户取消操作
+    });
+  };
+
+  // 添加到指定文件夹
+  const addToSpecificFolder = (doc: any, folderId: number | null) => {
+    // 检查是否已经在收藏中
+    const exists = favoriteDocuments.value.some(item => 
+      item.id === doc.id && item.parentId === folderId
+    );
+    
+    if (exists) {
+      ElMessage.warning('该文档已在此文件夹中收藏');
+      return;
+    }
+    
+    // 添加到收藏
+    favoriteDocuments.value.push({
+      id: doc.id,
+      title: doc.name,
+      type: doc.type,
+      favoriteTime: new Date(),
+      isFolder: doc.isFolder || false,
+      parentId: folderId // 指定文件夹ID
+    });
+    
+    const folderName = folderId ? 
+      (favoriteDocuments.value.find(f => f.id === folderId)?.name || '指定文件夹') : 
+      '根目录';
+      
+    ElMessage.success(`已添加到文件夹: ${folderName}`);
+    
+    // 实际应用中应调用API添加到收藏
+  };
 
   </script>
   
@@ -5386,10 +5626,8 @@ const createNewKnowledge = () => {
 
 .sharing-actions {
   display: flex;
-  justify-content: flex-start;
-  align-items: center;
-  gap: 12px;
-  margin-left: -10px;
+  justify-content: space-around;
+  gap: 5px;
 }
 
 .shares-filter {
@@ -5426,9 +5664,8 @@ const createNewKnowledge = () => {
 
 .share-actions {
   display: flex;
-  justify-content: flex-start;
-  gap: 8px;
-  margin-left: -10px;
+  justify-content: space-around;
+  gap: 5px;
 }
 
 .expired-text {
@@ -5702,11 +5939,13 @@ const createNewKnowledge = () => {
   color: #606266;
   font-weight: 500;
   text-align: left;
+  padding: 12px 0;
 }
 
 :deep(.el-table td) {
   text-align: left;
   vertical-align: middle;
+  padding: 12px 0;
 }
 
 :deep(.el-table .cell) {
@@ -5714,6 +5953,9 @@ const createNewKnowledge = () => {
   line-height: 23px;
   padding-left: 10px;
   padding-right: 10px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 :deep(.el-table--border th) {
@@ -5724,6 +5966,445 @@ const createNewKnowledge = () => {
   border-right: 1px solid #ebeef5;
 }
 
+/* 确保分享列表中表头和内容对齐 */
+.sharing-list-container :deep(.el-table th .cell),
+.sharing-list-container :deep(.el-table td .cell) {
+  padding-left: 10px !important;
+  padding-right: 10px !important;
+  text-align: left !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+/* 表格每一列都左对齐 */
+.sharing-list-container :deep(.el-table--enable-row-transition .el-table__body td.el-table__cell),
+.sharing-list-container :deep(.el-table th.el-table__cell.is-leaf) {
+  text-align: left !important;
+}
+
+/* 强制表格所有元素左对齐 */
+:deep(.el-table) {
+  width: 100% !important;
+}
+
+:deep(.el-table th),
+:deep(.el-table td) {
+  text-align: left !important;
+}
+
+:deep(.el-table th > .cell),
+:deep(.el-table td > .cell) {
+  text-align: left !important;
+  padding-left: 0 !important;
+}
+
+:deep(.el-table .el-table__cell) {
+  text-align: left !important;
+}
+
+/* 覆盖默认的表格样式 */
+.el-table {
+  --el-table-header-text-align: left !important;
+  --el-table-cell-text-align: left !important;
+}
+
+/* 为所有表格列内容添加左对齐 */
+:deep(.el-table-column--align-left) {
+  text-align: left !important;
+}
+
+:deep(.el-table-column--align-left .cell) {
+  text-align: left !important;
+}
+
+/* 全局强制表格左对齐 */
+:deep(.el-table) .el-table__header-wrapper th {
+  text-align: left !important;
+  padding-left: 0 !important;
+}
+
+:deep(.el-table) .el-table__body-wrapper td {
+  text-align: left !important;
+  padding-left: 0 !important;
+}
+
+:deep(.el-table) .el-table__header-wrapper th .cell,
+:deep(.el-table) .el-table__body-wrapper td .cell {
+  text-align: left !important;
+  padding-left: 10px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+:deep(.el-table .cell) {
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: normal !important;
+  word-break: break-all !important;
+  line-height: 23px !important;
+  padding-left: 10px !important;
+  padding-right: 10px !important;
+  text-align: left !important;
+}
+
+/* 美化表格操作按钮样式 */
+.sharing-list-container .share-actions {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 3px;
+}
+
+.sharing-list-container .share-actions .el-button {
+  padding: 4px;
+  margin: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* 确保所有操作图标垂直居中且大小一致 */
+.sharing-list-container .el-icon {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 16px;
+  height: 16px;
+  width: 16px;
+}
+
+.sharing-list-container :deep(.el-table__header th) {
+  height: 50px;
+  vertical-align: middle;
+  font-weight: 500;
+  background-color: #f5f7fa;
+}
+
+.sharing-list-container :deep(.el-table__row td) {
+  height: 60px;
+  vertical-align: middle;
+}
+
+/* 确保表格内容垂直居中 */
+.sharing-list-container :deep(.el-table__cell) {
+  vertical-align: middle;
+}
+
+/* 确保表头文字居中 */
+.sharing-list-container :deep(.el-table__header-wrapper th .cell) {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 40px;
+}
+
+/* 表格所有单元格内容垂直居中 */
+.sharing-list-container :deep(.el-table__body-wrapper td .cell) {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 40px;
+}
+
+/* 左对齐内容名称列 */
+.sharing-list-container :deep(.el-table__row td:first-child .cell) {
+  justify-content: flex-start;
+}
+
+/* 强制所有表头居中 */
+:deep(.el-table .el-table__header th) {
+  text-align: center !important;
+}
+
+:deep(.el-table .el-table__header th .cell) {
+  text-align: center !important;
+  display: inline-flex !important;
+  justify-content: center !important;
+  width: 100% !important;
+  padding: 0 10px !important;
+}
+
+/* 确保表头文字加粗且颜色统一 */
+:deep(.el-table .el-table__header-wrapper th.el-table__cell .cell) {
+  font-weight: bold !important;
+  color: #606266 !important;
+}
+
+/* 内容名称列左对齐 */
+.sharing-list-container :deep(.el-table__header-wrapper th:first-child .cell) {
+  justify-content: flex-start !important;
+  padding-left: 10px !important;
+  text-align: left !important;
+}
+
+/* 确保内容名称列的单元格内容左对齐 */
+.sharing-list-container :deep(.el-table__row td:first-child) {
+  text-align: left !important;
+}
+
+/* 修正左侧第一列的样式，确保与表头对齐 */
+.share-name {
+  padding-left: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+/* 修改表格样式，美化整体外观 */
+.sharing-list-container .el-table {
+  margin-top: 10px;
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+/* 确保表头和单元格内容垂直居中 */
+.sharing-list-container :deep(.el-table__cell) {
+  padding: 8px 0;
+}
+
+/* 表头与内容左右内边距相同 */
+.sharing-list-container :deep(.el-table__header-wrapper th .cell),
+.sharing-list-container :deep(.el-table__body-wrapper td .cell) {
+  padding: 0 10px;
+}
+
+/* 修改表格样式，去除边框 */
+.sharing-list-container .el-table {
+  margin-top: 10px;
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  border: none !important;
+}
+
+/* 去除单元格边框 */
+.sharing-list-container :deep(.el-table--border),
+.sharing-list-container :deep(.el-table--border th),
+.sharing-list-container :deep(.el-table--border td) {
+  border: 0 !important;
+}
+
+/* 去除表头和内容之间的边框 */
+.sharing-list-container :deep(.el-table__header-wrapper),
+.sharing-list-container :deep(.el-table__body-wrapper) {
+  border-bottom: none !important;
+}
+
+/* 设置单元格间距 */
+.sharing-list-container :deep(.el-table__cell) {
+  padding: 12px 0;
+  border-bottom: 1px solid #f0f0f0 !important;
+}
+
+/* 优化表格行间距和分隔线 */
+.sharing-list-container :deep(.el-table__row) {
+  height: 60px;
+}
+
+/* 表头与内容之间添加更明显的分隔 */
+.sharing-list-container :deep(.el-table__header) {
+  border-bottom: 2px solid #ebeef5 !important;
+}
+
+/* 确保最后一行没有底部边框 */
+.sharing-list-container :deep(.el-table__row:last-child td) {
+  border-bottom: none !important;
+}
+
+/* 修改表格行悬停效果 */
+.sharing-list-container :deep(.el-table__row:hover > td) {
+  background-color: #f5f7fa !important;
+}
+
+/* 调整表格列之间的间距 */
+.sharing-list-container :deep(.el-table__header-wrapper th),
+.sharing-list-container :deep(.el-table__body-wrapper td) {
+  padding: 0 !important;
+}
+
+/* 调整表格列宽，减少空白空间 */
+.sharing-list-container :deep(.el-table__header) {
+  table-layout: fixed;
+  width: 100% !important;
+}
+
+/* 确保内容紧凑 */
+.sharing-list-container :deep(.el-table__body) {
+  width: 100% !important;
+  table-layout: fixed;
+}
+
+/* 移除可能的内边距，让列更紧凑 */
+.sharing-list-container :deep(.el-table__cell .cell) {
+  padding-left: 5px !important;
+  padding-right: 5px !important;
+}
+
+/* 专门针对第一列和第二列的间距调整 */
+.sharing-list-container :deep(.el-table__row td:first-child) {
+  padding-right: 0 !important;
+}
+
+.sharing-list-container :deep(.el-table__row td:nth-child(2)) {
+  padding-left: 0 !important;
+}
+
+/* 修改表格样式，去除边框 */
+.documents-view .el-table {
+  margin-top: 10px;
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  border: none !important;
+}
+
+/* 去除单元格边框 */
+.documents-view :deep(.el-table--border),
+.documents-view :deep(.el-table--border th),
+.documents-view :deep(.el-table--border td) {
+  border: 0 !important;
+}
+
+/* 去除表头和内容之间的边框 */
+.documents-view :deep(.el-table__header-wrapper),
+.documents-view :deep(.el-table__body-wrapper) {
+  border-bottom: none !important;
+}
+
+/* 设置单元格间距 */
+.documents-view :deep(.el-table__cell) {
+  padding: 12px 0;
+  border-bottom: 1px solid #f0f0f0 !important;
+}
+
+/* 优化表格行间距和分隔线 */
+.documents-view :deep(.el-table__row) {
+  height: 60px;
+}
+
+/* 表头与内容之间添加更明显的分隔 */
+.documents-view :deep(.el-table__header) {
+  border-bottom: 2px solid #ebeef5 !important;
+}
+
+/* 确保最后一行没有底部边框 */
+.documents-view :deep(.el-table__row:last-child td) {
+  border-bottom: none !important;
+}
+
+/* 修改表格行悬停效果 */
+.documents-view :deep(.el-table__row:hover > td) {
+  background-color: #f5f7fa !important;
+}
+
+/* 确保表格内容垂直居中 */
+.documents-view :deep(.el-table__cell) {
+  vertical-align: middle;
+}
+
+/* 确保表头文字居中和内容对齐 */
+.documents-view :deep(.el-table__header-wrapper th .cell) {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 40px;
+}
+
+/* 表格所有单元格内容垂直居中 */
+.documents-view :deep(.el-table__body-wrapper td .cell) {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 40px;
+}
+
+/* 左对齐内容名称列 */
+.documents-view :deep(.el-table__row td:first-child .cell) {
+  justify-content: flex-start;
+}
+
+/* 内容名称列左对齐 */
+.documents-view :deep(.el-table__header-wrapper th:first-child .cell) {
+  justify-content: flex-start !important;
+  padding-left: 10px !important;
+  text-align: left !important;
+}
+
+/* 确保内容名称列的单元格内容左对齐 */
+.documents-view :deep(.el-table__row td:first-child) {
+  text-align: left !important;
+}
+
+/* 美化表格操作按钮样式 */
+.documents-view .table-actions {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 3px;
+}
+
+.documents-view .table-actions .el-button {
+  padding: 4px;
+  margin: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* 确保所有操作图标垂直居中且大小一致 */
+.documents-view .el-icon {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 16px;
+  height: 16px;
+  width: 16px;
+}
+
+/* 历史版本对话框样式 */
+.history-version-container {
+  padding: 0;
+}
+
+.history-version-container :deep(.el-table) {
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+/* 表格单元格内容垂直居中 */
+.history-version-container :deep(.el-table__cell) {
+  vertical-align: middle;
+}
+
+/* 确保表头与内容左右对齐 */
+.history-version-container :deep(.el-table__header-wrapper th .cell),
+.history-version-container :deep(.el-table__body-wrapper td .cell) {
+  padding: 0 10px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* 去除表格边框 */
+.history-version-container :deep(.el-table--border),
+.history-version-container :deep(.el-table--border th.is-leaf),
+.history-version-container :deep(.el-table--border td) {
+  border-color: #ebeef5;
+}
+
+/* 表头底部边框加深 */
+.history-version-container :deep(.el-table__header) {
+  border-bottom: 2px solid #dcdfe6;
+}
+
+/* 确保表格行高度一致 */
+.history-version-container :deep(.el-table__row) {
+  height: 52px;
+}
   </style>
+
 
 

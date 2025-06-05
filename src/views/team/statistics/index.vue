@@ -4,9 +4,6 @@
       <div class="filter-header">
         <h2>团队数据统计</h2>
         <div class="filter-options">
-          <el-select v-model="filter.teamId" placeholder="选择团队" clearable @change="loadTeamStatistics">
-            <el-option v-for="team in teamList" :key="team.id" :label="team.name" :value="team.id" />
-          </el-select>
           <el-date-picker
             v-model="filter.dateRange"
             type="daterange"
@@ -45,7 +42,7 @@
         <el-card class="chart-card">
           <template #header>
             <div class="chart-header">
-              <span>成员角色分布</span>
+              <div class="chart-title">成员角色分布</div>
               <el-radio-group v-model="roleChartType" size="small" @change="updateRoleChart">
                 <el-radio-button label="pie">饼图</el-radio-button>
                 <el-radio-button label="bar">柱状图</el-radio-button>
@@ -62,7 +59,7 @@
         <el-card class="chart-card">
           <template #header>
             <div class="chart-header">
-              <span>知识文档分布</span>
+              <div class="chart-title">知识文档分布</div>
               <el-radio-group v-model="docChartType" size="small" @change="updateDocChart">
                 <el-radio-button label="pie">饼图</el-radio-button>
                 <el-radio-button label="bar">柱状图</el-radio-button>
@@ -81,8 +78,8 @@
         <el-card class="chart-card">
           <template #header>
             <div class="chart-header">
-              <span>团队活动趋势</span>
-              <el-select v-model="activityMetric" size="small" @change="updateActivityChart">
+              <div class="chart-title">团队活动趋势</div>
+              <el-select v-model="activityMetric" size="small" @change="updateActivityChart" style="width: 120px;">
                 <el-option label="文档创建数" value="created" />
                 <el-option label="文档编辑数" value="edited" />
                 <el-option label="文档访问数" value="viewed" />
@@ -106,7 +103,9 @@ import {
   User, 
   Document, 
   View, 
-  Edit
+  Edit,
+  Plus,
+  Share
 } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 
@@ -119,7 +118,6 @@ type ChartInstances = {
 
 // 数据过滤条件
 const filter = reactive({
-  teamId: '',
   dateRange: [] as string[]
 })
 
@@ -160,6 +158,18 @@ const statisticCards = reactive([
     value: 0, 
     icon: 'Edit', 
     className: 'edit-card' 
+  },
+  { 
+    title: '本月新增', 
+    value: 0, 
+    icon: 'Plus', 
+    className: 'monthly-card' 
+  },
+  { 
+    title: '分享至社区', 
+    value: 0, 
+    icon: 'Share', 
+    className: 'share-card' 
   }
 ])
 
@@ -195,6 +205,12 @@ const activityTrendData = reactive({
   created: [10, 15, 20, 25, 30, 40],
   edited: [15, 20, 30, 40, 50, 60],
   viewed: [50, 80, 100, 120, 150, 200]
+} as {
+  dates: string[];
+  created: number[];
+  edited: number[];
+  viewed: number[];
+  [key: string]: any;
 })
 
 // 图表实例
@@ -478,6 +494,8 @@ const updateStatisticCards = () => {
   statisticCards[1].value = knowledgeDocumentsData.reduce((sum, item) => sum + item.value, 0)
   statisticCards[2].value = 852
   statisticCards[3].value = 237
+  statisticCards[4].value = 12 // 本月新增
+  statisticCards[5].value = 76 // 分享至社区
 }
 
 // 加载团队统计数据
@@ -618,6 +636,16 @@ onUnmounted(() => {
   color: #F56C6C;
 }
 
+.monthly-card .card-icon {
+  background-color: rgba(144, 147, 153, 0.1);
+  color: #909399;
+}
+
+.share-card .card-icon {
+  background-color: rgba(103, 119, 239, 0.1);
+  color: #6777EF;
+}
+
 .chart-row {
   margin-bottom: 20px;
 }
@@ -630,6 +658,10 @@ onUnmounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.chart-title {
+  margin-right: 10px;
 }
 
 @media (max-width: 768px) {

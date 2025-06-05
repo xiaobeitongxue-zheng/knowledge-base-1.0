@@ -195,19 +195,6 @@ export function rollbackKnowledgeVersion(kId: number, versionId: number) {
   })
 }
 
-// 展示用户所有收藏项
-export function getAllFavouriteItems(num?: number, startIndex?: number) {
-  let url = '/index/favourite/allItems';
-  const params: string[] = [];
-  if (startIndex !== undefined) params.push(`startIndex=${startIndex}`);
-  if (num !== undefined) params.push(`num=${num}`);
-  if (params.length) url += '?' + params.join('&');
-  return request({
-    url,
-    method: 'get'
-  });
-}
-
 // 按周或月返回知识创建数量
 export function getKnowledgeCreateCount(space: number, dateType: number) {
   return request({
@@ -225,7 +212,7 @@ export function getUserKnowledgeOperationCount(space: number) {
 }
 
 // 新建用户代办
-export function createUserAgency(data: { agencyName?: string }) {
+export function createUserAgency(data: { agencyName?: string, deadline?: string }) {
   return request({
     url: '/user/agency',
     method: 'post',
@@ -271,3 +258,89 @@ export function getAllKnowledgeBySpace(space: number) {
     }
   })
 }
+
+// 收藏相关接口
+
+// 获取用户所有收藏夹
+export function getUserFavoriteFolders() {
+  return request({
+    url: '/index/favourite/myFolders',
+    method: 'get',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded'
+    }
+  })
+}
+
+// 新建收藏夹
+export function createFavoriteFolder(data: { name: string, description?: string }) {
+  return request({
+    url: '/index/favourite/addFolder',
+    method: 'post',
+    data,
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  })
+}
+
+// 修改收藏夹
+export function updateFavoriteFolder(data: { folderId: number, name: string, description?: string }) {
+  return request({
+    url: '/index/favourite/modifyFolder',
+    method: 'post',
+    data,
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  })
+}
+
+// 删除收藏夹
+export function deleteFavoriteFolder(folderId: number) {
+  return request({
+    url: `/index/favourite/deleteFolder/${folderId}`,
+    method: 'post',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded'
+    }
+  })
+}
+
+// 获取收藏夹下的所有收藏项
+export function getFavoriteFolderItems(folderId: number) {
+  return request({
+    url: `/index/favourite/${folderId}/items`,
+    method: 'get',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded'
+    }
+  })
+}
+
+// 添加收藏
+export function addFavoriteItem(communityKnowledgeId: number, folderId: number) {
+  return request({
+    url: '/index/favourite/addItem',
+    method: 'post',
+    params: {
+      communityKnowledgeId,
+      folderId
+    },
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded'
+    }
+  })
+}
+
+// 取消收藏社区知识
+export function cancelFavoriteItem(communityKnowledgeId: number) {
+  return request({
+    url: `/index/favourite/concealFavourite/${communityKnowledgeId}`,
+    method: 'post',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded'
+    }
+  })
+}
+

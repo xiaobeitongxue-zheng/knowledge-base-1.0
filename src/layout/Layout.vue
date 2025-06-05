@@ -38,7 +38,7 @@
               <span>团队协作</span>
             </template>
             <el-menu-item index="/team/knowledge">团队知识库</el-menu-item>
-            <el-menu-item index="/team/management">团队管理</el-menu-item>
+            <!-- <el-menu-item index="/team/management">团队管理</el-menu-item> -->
             <el-menu-item index="/team/statistics">团队统计</el-menu-item>
           </el-sub-menu>
 

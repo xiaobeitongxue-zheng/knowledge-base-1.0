@@ -11,9 +11,7 @@
         :class="{ 'unread': !message.isRead }"
       >
         <div class="message-icon" :class="message.type" v-if="message.type">
-          <el-icon v-if="message.type === 'system'"><Histogram /></el-icon>
-          <el-icon v-else-if="message.type === 'user'"><User /></el-icon>
-          <el-icon v-else-if="message.type === 'team'"><UserFilled /></el-icon>
+          <el-icon><User /></el-icon>
         </div>
         <div class="message-content-wrapper">
           <div class="message-header">
@@ -50,7 +48,7 @@
 </template>
 
 <script lang="ts" setup>
-import { Histogram, User, UserFilled, CircleCheck } from '@element-plus/icons-vue'
+import { User, CircleCheck } from '@element-plus/icons-vue'
 
 // 定义消息类型接口
 interface Message {
@@ -60,7 +58,7 @@ interface Message {
   time?: string;
   sendTime?: string;
   isRead: boolean;
-  type?: 'system' | 'user' | 'team';
+  type?: 'user';
   sender?: string;
 }
 
@@ -127,18 +125,8 @@ const deleteMessage = (id: number) => {
   flex-shrink: 0;
 }
 
-.message-icon.system {
-  background-color: #409EFF;
-  color: white;
-}
-
 .message-icon.user {
   background-color: #67C23A;
-  color: white;
-}
-
-.message-icon.team {
-  background-color: #E6A23C;
   color: white;
 }
 

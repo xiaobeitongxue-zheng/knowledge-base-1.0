@@ -21,10 +21,6 @@
         <el-tabs v-model="activeTab" @tab-click="handleTabClick" v-if="currentPath.length === 0 && !isSearchMode">
           <el-tab-pane v-if="userTeamId === 0" label="所有团队" name="allTeams"></el-tab-pane>
           <el-tab-pane v-if="userTeamId !== 0" label="我的团队" name="myTeams"></el-tab-pane>
-          <el-tab-pane v-if="userTeamId !== 0" label="团队知识库" name="teamKnowledge"></el-tab-pane>
-          <el-tab-pane v-if="userTeamId !== 0" label="最近更新" name="recent"></el-tab-pane>
-          <el-tab-pane v-if="userTeamId !== 0" label="我创建的" name="created"></el-tab-pane>
-          <el-tab-pane v-if="userTeamId !== 0" label="热门文档" name="popular"></el-tab-pane>
         </el-tabs>
         
         <!-- 创建团队按钮 - 只有当用户没有加入任何团队时显示 -->
